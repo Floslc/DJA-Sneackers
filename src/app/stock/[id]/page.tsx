@@ -1,12 +1,13 @@
 export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ArrowLeft, Pencil } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Pair, StockMovement } from '@/lib/types'
-import { STATUS_CONFIG, CONDITION_CONFIG } from '@/lib/constants'
+import { CONDITION_CONFIG } from '@/lib/constants'
 import { grossMargin, daysInStock } from '@/lib/calculations'
 import { StatusBadge } from '@/components/stock/StatusBadge'
 import { Button } from '@/components/ui/button'
@@ -24,9 +25,9 @@ function formatDate(d: string | null): string {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between py-2 border-b border-zinc-800/50 last:border-0">
+    <div className="flex justify-between border-b border-zinc-800/50 py-2 last:border-0">
       <span className="text-sm text-zinc-500">{label}</span>
-      <span className="text-sm text-zinc-200 font-medium">{value}</span>
+      <span className="text-sm font-medium text-zinc-200">{value}</span>
     </div>
   )
 }
@@ -38,7 +39,9 @@ export default async function PairDetailPage({
 }) {
   const { id } = await params
 
-  const [{ data: pairData }, { data: movements }] = await Promise.all([
+  const supabase = createSupabaseServerClient()
+
+  const [{ data: pairData, error: pairError }, { data: movements }] = await Promise.all([
     supabase.from('pairs').select('*').eq('id', id).single(),
     supabase
       .from('stock_movements')
@@ -47,20 +50,24 @@ export default async function PairDetailPage({
       .order('created_at', { ascending: false }),
   ])
 
+  if (pairError) {
+    console.error('[PairDetail] Supabase error:', JSON.stringify(pairError))
+  }
+
   if (!pairData) notFound()
+
   const pair = pairData as Pair
   const stockMovements = (movements ?? []) as StockMovement[]
-
   const margin = grossMargin(pair)
   const days = daysInStock(pair)
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="max-w-3xl space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <Link href="/stock">
-            <Button variant="ghost" size="icon" className="h-9 w-9 mt-0.5">
+            <Button variant="ghost" size="icon" className="mt-0.5 h-9 w-9">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -68,8 +75,10 @@ export default async function PairDetailPage({
             <h1 className="text-2xl font-bold text-zinc-100">
               {pair.brand} {pair.model}
             </h1>
-            <div className="flex items-center gap-3 mt-1">
-              {pair.colorway && <span className="text-sm text-zinc-400">{pair.colorway}</span>}
+            <div className="mt-1 flex items-center gap-3">
+              {pair.colorway && (
+                <span className="text-sm text-zinc-400">{pair.colorway}</span>
+              )}
               <span className="text-sm text-zinc-400">Taille {pair.size}</span>
               <StatusBadge status={pair.status} />
             </div>
@@ -84,7 +93,7 @@ export default async function PairDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Product Info */}
+        {/* Informations produit */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-zinc-400">Informations produit</CardTitle>
@@ -100,7 +109,7 @@ export default async function PairDetailPage({
           </CardContent>
         </Card>
 
-        {/* Financial Info */}
+        {/* Finances */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-zinc-400">Finances</CardTitle>
@@ -112,7 +121,15 @@ export default async function PairDetailPage({
             <InfoRow
               label="Marge estimée"
               value={
-                <span className={margin === null ? 'text-zinc-500' : margin >= 0 ? 'text-green-400' : 'text-red-400'}>
+                <span
+                  className={
+                    margin === null
+                      ? 'text-zinc-500'
+                      : margin >= 0
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                  }
+                >
                   {formatCurrency(margin)}
                 </span>
               }
@@ -122,7 +139,7 @@ export default async function PairDetailPage({
           </CardContent>
         </Card>
 
-        {/* Sale Info */}
+        {/* Vente */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-zinc-400">Vente</CardTitle>
@@ -134,7 +151,7 @@ export default async function PairDetailPage({
           </CardContent>
         </Card>
 
-        {/* Shipping Info */}
+        {/* Expédition */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-zinc-400">Expédition</CardTitle>
@@ -152,8 +169,8 @@ export default async function PairDetailPage({
             />
             <InfoRow label="Date d'expédition" value={formatDate(pair.shipping_date)} />
             {pair.notes && (
-              <div className="pt-2 mt-2 border-t border-zinc-800">
-                <p className="text-xs text-zinc-500 mb-1">Notes</p>
+              <div className="mt-2 border-t border-zinc-800 pt-2">
+                <p className="mb-1 text-xs text-zinc-500">Notes</p>
                 <p className="text-sm text-zinc-300">{pair.notes}</p>
               </div>
             )}
@@ -161,17 +178,19 @@ export default async function PairDetailPage({
         </Card>
       </div>
 
-      {/* History */}
+      {/* Historique mouvements */}
       {stockMovements.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-zinc-400">Historique des mouvements</CardTitle>
+            <CardTitle className="text-sm text-zinc-400">
+              Historique des mouvements
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stockMovements.map((mv) => (
                 <div key={mv.id} className="flex items-center gap-3 text-sm">
-                  <span className="text-zinc-600 text-xs w-32 flex-shrink-0">
+                  <span className="w-32 flex-shrink-0 text-xs text-zinc-600">
                     {format(new Date(mv.created_at), 'd MMM yyyy HH:mm', { locale: fr })}
                   </span>
                   <div className="flex items-center gap-2">
@@ -183,7 +202,9 @@ export default async function PairDetailPage({
                     )}
                     <StatusBadge status={mv.new_status} />
                   </div>
-                  {mv.note && <span className="text-zinc-500 text-xs">{mv.note}</span>}
+                  {mv.note && (
+                    <span className="text-xs text-zinc-500">{mv.note}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -192,9 +213,13 @@ export default async function PairDetailPage({
       )}
 
       <div className="flex gap-3 text-xs text-zinc-600">
-        <span>Créé le {format(new Date(pair.created_at), 'd MMM yyyy', { locale: fr })}</span>
+        <span>
+          Créé le {format(new Date(pair.created_at), 'd MMM yyyy', { locale: fr })}
+        </span>
         <span>·</span>
-        <span>Modifié le {format(new Date(pair.updated_at), 'd MMM yyyy', { locale: fr })}</span>
+        <span>
+          Modifié le {format(new Date(pair.updated_at), 'd MMM yyyy', { locale: fr })}
+        </span>
         <span>·</span>
         <span className="font-mono">{pair.id}</span>
       </div>

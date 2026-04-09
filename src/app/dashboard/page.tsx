@@ -9,7 +9,7 @@ import {
   Clock,
   Layers,
 } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Pair } from '@/lib/types'
 import {
   totalPurchaseValue,
@@ -30,23 +30,35 @@ function formatCurrency(n: number): string {
 }
 
 export default async function DashboardPage() {
-  const { data: pairs = [], error } = await supabase
+  // Nouvelle instance par requête — pas de singleton serveur
+  const supabase = createSupabaseServerClient()
+
+  const { data, error } = await supabase
     .from('pairs')
     .select('*')
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('DASHBOARD ERROR:', error)
+    console.error('[Dashboard] Supabase error:', JSON.stringify(error))
   }
 
-  const allPairs = (pairs ?? []) as Pair[]
+  const allPairs = (data ?? []) as Pair[]
   const statusCounts = countByStatus(allPairs)
-  const inStock = (statusCounts['in_stock'] ?? 0) + (statusCounts['reserved'] ?? 0)
+
+  const inStock =
+    (statusCounts['in_stock'] ?? 0) +
+    (statusCounts['reserved'] ?? 0) +
+    (statusCounts['listed_on_whatnot'] ?? 0)
+
   const soldCount =
     (statusCounts['sold'] ?? 0) +
     (statusCounts['to_ship'] ?? 0) +
     (statusCounts['shipped'] ?? 0) +
     (statusCounts['completed'] ?? 0)
-  const purchaseValue = totalPurchaseValue(allPairs.filter((p) => !['cancelled'].includes(p.status)))
+
+  const purchaseValue = totalPurchaseValue(
+    allPairs.filter((p) => !['cancelled', 'returned'].includes(p.status))
+  )
   const realizedMargin = totalRealizedMargin(allPairs)
   const avgDays = averageDaysToSell(allPairs)
   const dormant = dormantPairs(allPairs)
@@ -56,10 +68,12 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-1">Vue d&apos;ensemble de votre stock</p>
+        <p className="text-sm text-zinc-500 mt-1">
+          Vue d&apos;ensemble · {allPairs.length} paire{allPairs.length !== 1 ? 's' : ''} dans la base
+        </p>
         {error && (
-          <p className="mt-2 text-sm text-red-400">
-            Erreur Supabase: {error.message}
+          <p className="mt-2 rounded-md border border-red-800 bg-red-950/50 px-3 py-2 text-sm text-red-400">
+            Erreur Supabase : {error.message}
           </p>
         )}
       </div>
@@ -68,7 +82,7 @@ export default async function DashboardPage() {
         <StatCard
           title="Paires en stock"
           value={inStock}
-          subtitle={`${allPairs.length} total dans la base`}
+          subtitle={`${allPairs.length} total · ${statusCounts['draft'] ?? 0} brouillon(s)`}
           icon={Package}
           accentColor="zinc"
         />
@@ -82,7 +96,7 @@ export default async function DashboardPage() {
         <StatCard
           title="Paires vendues"
           value={soldCount}
-          subtitle="Toutes plateformes"
+          subtitle="Toutes plateformes confondues"
           icon={ShoppingCart}
           accentColor="green"
         />
@@ -117,14 +131,17 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium text-zinc-300">
               Dernières paires ajoutées
             </CardTitle>
-            <Link href="/stock" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            <Link
+              href="/stock"
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
               Voir tout →
             </Link>
           </div>
         </CardHeader>
         <CardContent>
           {recent.length === 0 ? (
-            <p className="text-sm text-zinc-500 py-4 text-center">
+            <p className="py-4 text-center text-sm text-zinc-500">
               Aucune paire dans la base.{' '}
               <Link href="/stock/new" className="text-zinc-300 hover:underline">
                 Ajouter la première
@@ -134,24 +151,22 @@ export default async function DashboardPage() {
             <div className="divide-y divide-zinc-800">
               {recent.map((pair) => (
                 <div key={pair.id} className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/stock/${pair.id}`}
-                        className="text-sm font-medium text-zinc-200 hover:text-zinc-100 transition-colors"
-                      >
-                        {pair.brand} {pair.model}
-                      </Link>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        {pair.size}
-                        {pair.colorway ? ` · ${pair.colorway}` : ''}
-                        {pair.purchase_date
-                          ? ` · ${format(new Date(pair.purchase_date), 'd MMM yyyy', { locale: fr })}`
-                          : ''}
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <Link
+                      href={`/stock/${pair.id}`}
+                      className="text-sm font-medium text-zinc-200 transition-colors hover:text-zinc-100"
+                    >
+                      {pair.brand} {pair.model}
+                    </Link>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      Taille {pair.size}
+                      {pair.colorway ? ` · ${pair.colorway}` : ''}
+                      {pair.purchase_date
+                        ? ` · ${format(new Date(pair.purchase_date), 'd MMM yyyy', { locale: fr })}`
+                        : ''}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="ml-4 flex flex-shrink-0 items-center gap-4">
                     <span className="text-sm font-medium text-zinc-300">
                       {formatCurrency(pair.purchase_price)}
                     </span>
