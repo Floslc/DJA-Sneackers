@@ -360,7 +360,7 @@ export function StockTable({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
           <Input
             placeholder="Rechercher marque, modèle, SKU..."
@@ -369,39 +369,162 @@ export function StockTable({
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            {(Object.entries(STATUS_CONFIG) as [PairStatus, typeof STATUS_CONFIG[PairStatus]][]).map(([key, val]) => (
-              <SelectItem key={key} value={key}>
-                {val.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={brandFilter} onValueChange={setBrandFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Marque" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes marques</SelectItem>
-            {BRANDS.map((b) => (
-              <SelectItem key={b} value={b}>
-                {b}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="flex-1 sm:w-[160px]">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous statuts</SelectItem>
+              {(Object.entries(STATUS_CONFIG) as [PairStatus, typeof STATUS_CONFIG[PairStatus]][]).map(([key, val]) => (
+                <SelectItem key={key} value={key}>
+                  {val.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={brandFilter} onValueChange={setBrandFilter}>
+            <SelectTrigger className="flex-1 sm:w-[140px]">
+              <SelectValue placeholder="Marque" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes marques</SelectItem>
+              {BRANDS.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <span className="text-sm text-zinc-500">
           {filteredPairs.length} paire{filteredPairs.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
+      {/* Mobile card list — visible only on small screens */}
+      <div className="sm:hidden space-y-2">
+        {table.getRowModel().rows.length === 0 ? (
+          <p className="py-8 text-center text-sm text-zinc-500">Aucune paire trouvée</p>
+        ) : (
+          table.getRowModel().rows.map((row) => {
+            const pair = row.original
+            const margin = grossMargin(pair)
+            return (
+              <div
+                key={row.id}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <button
+                      onClick={() => router.push(`/stock/${pair.id}`)}
+                      className="text-sm font-medium text-zinc-100 hover:underline text-left truncate block"
+                    >
+                      {pair.brand} {pair.model}
+                    </button>
+                    {pair.colorway && (
+                      <p className="text-xs text-zinc-500 mt-0.5 truncate">{pair.colorway}</p>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => router.push(`/stock/${pair.id}/edit`)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Modifier
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          try {
+                            await onDuplicate(pair.id)
+                            toast({ title: 'Paire dupliquée' })
+                          } catch {
+                            toast({ title: 'Erreur', variant: 'destructive' })
+                          }
+                        }}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Dupliquer
+                      </DropdownMenuItem>
+                      {STATUS_TRANSITIONS[pair.status].length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <ArrowRight className="mr-2 h-4 w-4" />
+                              Changer statut
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              {STATUS_TRANSITIONS[pair.status].map((s) => (
+                                <DropdownMenuItem
+                                  key={s}
+                                  onClick={async () => {
+                                    try {
+                                      await onUpdateStatus(pair.id, s)
+                                      toast({ title: 'Statut mis à jour', description: STATUS_CONFIG[s].label })
+                                    } catch {
+                                      toast({ title: 'Erreur', variant: 'destructive' })
+                                    }
+                                  }}
+                                >
+                                  {STATUS_CONFIG[s].label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-400 focus:text-red-300 focus:bg-red-950"
+                        onClick={async () => {
+                          if (!confirm('Supprimer cette paire ?')) return
+                          try {
+                            await onDelete(pair.id)
+                            toast({ title: 'Paire supprimée' })
+                          } catch {
+                            toast({ title: 'Erreur', variant: 'destructive' })
+                          }
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <span>T. {pair.size}</span>
+                    {pair.sku && <span className="font-mono">{pair.sku}</span>}
+                  </div>
+                  <StatusBadge status={pair.status} />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-400">{formatCurrency(pair.purchase_price)}</span>
+                  <span
+                    className={cn(
+                      'font-medium',
+                      margin === null ? 'text-zinc-600' : margin >= 0 ? 'text-green-400' : 'text-red-400'
+                    )}
+                  >
+                    {margin !== null ? `+${formatCurrency(margin)}` : '—'}
+                  </span>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Desktop table — hidden on small screens */}
+      <div className="hidden sm:block rounded-lg border border-zinc-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

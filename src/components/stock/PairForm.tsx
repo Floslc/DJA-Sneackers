@@ -125,11 +125,11 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
   const inputClass = 'bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600'
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-2xl">
       {/* Product Info */}
       <div className="space-y-4">
         <SectionTitle>Informations produit</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="SKU" error={errors.sku}>
             <Input
               className={inputClass}
@@ -161,7 +161,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
             onChange={(e) => set('model', e.target.value)}
           />
         </FormField>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Colorway" error={errors.colorway}>
             <Input
               className={inputClass}
@@ -179,7 +179,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
             />
           </FormField>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="État" required error={errors.condition}>
             <Select value={formData.condition ?? 'new'} onValueChange={(v) => set('condition', v)}>
               <SelectTrigger className={inputClass}>
@@ -216,7 +216,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       {/* Prix */}
       <div className="space-y-4">
         <SectionTitle>Prix</SectionTitle>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <FormField label="Prix d'achat (€)" required error={errors.purchase_price}>
             <Input
               className={inputClass}
@@ -256,7 +256,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       {/* Logistique */}
       <div className="space-y-4">
         <SectionTitle>Acquisition</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Source / Vendeur" error={errors.source}>
             <Input
               className={inputClass}
@@ -279,7 +279,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       {/* Vente */}
       <div className="space-y-4">
         <SectionTitle>Vente</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Plateforme de vente" error={errors.platform}>
             <Select
               value={formData.platform ?? ''}
@@ -319,7 +319,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       {/* Expédition */}
       <div className="space-y-4">
         <SectionTitle>Expédition</SectionTitle>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Numéro de suivi" error={errors.tracking_number}>
             <Input
               className={inputClass}
@@ -362,7 +362,7 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 pt-2">
         <Button type="submit" disabled={submitting || isLoading}>
           {submitting || isLoading ? 'Enregistrement...' : submitLabel}
         </Button>

@@ -62,20 +62,20 @@ export default async function PairDetailPage({
   const days = daysInStock(pair)
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <Link href="/stock">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <Link href="/stock" className="flex-shrink-0">
             <Button variant="ghost" size="icon" className="mt-0.5 h-9 w-9">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-100">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-zinc-100 truncate">
               {pair.brand} {pair.model}
             </h1>
-            <div className="mt-1 flex items-center gap-3">
+            <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
               {pair.colorway && (
                 <span className="text-sm text-zinc-400">{pair.colorway}</span>
               )}
@@ -84,15 +84,16 @@ export default async function PairDetailPage({
             </div>
           </div>
         </div>
-        <Button asChild>
+        <Button asChild size="sm" className="flex-shrink-0">
           <Link href={`/stock/${id}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Modifier
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Modifier</span>
+            <span className="sm:hidden">Édit.</span>
           </Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Informations produit */}
         <Card>
           <CardHeader className="pb-2">
@@ -212,7 +213,7 @@ export default async function PairDetailPage({
         </Card>
       )}
 
-      <div className="flex gap-3 text-xs text-zinc-600">
+      <div className="flex flex-wrap gap-2 sm:gap-3 text-xs text-zinc-600">
         <span>
           Créé le {format(new Date(pair.created_at), 'd MMM yyyy', { locale: fr })}
         </span>
