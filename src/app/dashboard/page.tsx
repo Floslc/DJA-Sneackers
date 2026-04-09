@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import {
   Package,
@@ -29,10 +30,13 @@ function formatCurrency(n: number): string {
 }
 
 export default async function DashboardPage() {
-  const { data: pairs = [] } = await supabase
+  const { data: pairs = [], error } = await supabase
     .from('pairs')
     .select('*')
-    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('DASHBOARD ERROR:', error)
+  }
 
   const allPairs = (pairs ?? []) as Pair[]
   const statusCounts = countByStatus(allPairs)
@@ -53,9 +57,13 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
         <p className="text-sm text-zinc-500 mt-1">Vue d&apos;ensemble de votre stock</p>
+        {error && (
+          <p className="mt-2 text-sm text-red-400">
+            Erreur Supabase: {error.message}
+          </p>
+        )}
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Paires en stock"
@@ -101,10 +109,8 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Dormant Alert */}
       {dormant.length > 0 && <DormantAlert pairs={dormant} />}
 
-      {/* Recent Pairs */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
