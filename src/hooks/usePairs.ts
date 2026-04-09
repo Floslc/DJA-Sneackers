@@ -5,6 +5,29 @@ import { supabase } from '@/lib/supabase'
 import type { Pair, PairStatus } from '@/lib/types'
 import { toast } from '@/hooks/use-toast'
 
+function getErrorMessage(e: unknown): string {
+  if (typeof e === 'object' && e !== null) {
+    const err = e as {
+      message?: string
+      error_description?: string
+      details?: string
+      hint?: string
+      code?: string
+    }
+
+    return (
+      err.message ||
+      err.error_description ||
+      err.details ||
+      err.hint ||
+      'Erreur inconnue'
+    )
+  }
+
+  if (typeof e === 'string') return e
+  return 'Erreur inconnue'
+}
+
 export function usePairs() {
   const [pairs, setPairs] = useState<Pair[]>([])
   const [loading, setLoading] = useState(true)
@@ -13,17 +36,25 @@ export function usePairs() {
   const fetchPairs = useCallback(async () => {
     setLoading(true)
     setError(null)
+
     try {
       const { data, error: err } = await supabase
         .from('pairs')
         .select('*')
         .order('created_at', { ascending: false })
+
       if (err) throw err
-      setPairs(data ?? [])
+
+      setPairs((data ?? []) as Pair[])
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Erreur inconnue'
+      console.error('usePairs.fetchPairs error:', e)
+      const message = getErrorMessage(e)
       setError(message)
-      toast({ title: 'Erreur', description: message, variant: 'destructive' })
+      toast({
+        title: 'Erreur',
+        description: message,
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -40,16 +71,26 @@ export function usePairs() {
         .insert(data)
         .select()
         .single()
+
       if (err) throw err
 
-      // Log movement
-      await supabase.from('stock_movements').insert({
-        pair_id: created.id,
-        movement_type: 'create',
-        old_status: null,
-        new_status: data.status,
-        note: 'Paire créée',
-      })
+      if (created) {
+        const movementPayload = {
+          pair_id: created.id,
+          movement_type: 'create',
+          old_status: null,
+          new_status: data.status,
+          note: 'Paire créée',
+        }
+
+        const { error: movementErr } = await supabase
+          .from('stock_movements')
+          .insert(movementPayload)
+
+        if (movementErr) {
+          console.error('stock_movements insert error:', movementErr)
+        }
+      }
 
       await fetchPairs()
       return created as Pair
@@ -67,16 +108,23 @@ export function usePairs() {
         .eq('id', id)
         .select()
         .single()
+
       if (err) throw err
 
-      // Log status movement if changed
       if (existing && updates.status && updates.status !== existing.status) {
-        await supabase.from('stock_movements').insert({
-          pair_id: id,
-          movement_type: 'status_change',
-          old_status: existing.status,
-          new_status: updates.status,
-        })
+        const { error: movementErr } = await supabase
+          .from('stock_movements')
+          .insert({
+            pair_id: id,
+            movement_type: 'status_change',
+            old_status: existing.status,
+            new_status: updates.status,
+            note: null,
+          })
+
+        if (movementErr) {
+          console.error('stock_movements status_change error:', movementErr)
+        }
       }
 
       await fetchPairs()
@@ -87,8 +135,13 @@ export function usePairs() {
 
   const deletePair = useCallback(
     async (id: string) => {
-      const { error: err } = await supabase.from('pairs').delete().eq('id', id)
+      const { error: err } = await supabase
+        .from('pairs')
+        .delete()
+        .eq('id', id)
+
       if (err) throw err
+
       await fetchPairs()
     },
     [fetchPairs]
@@ -103,15 +156,22 @@ export function usePairs() {
         .from('pairs')
         .update({ status: newStatus })
         .eq('id', id)
+
       if (err) throw err
 
-      await supabase.from('stock_movements').insert({
-        pair_id: id,
-        movement_type: 'status_change',
-        old_status: existing.status,
-        new_status: newStatus,
-        note: note ?? null,
-      })
+      const { error: movementErr } = await supabase
+        .from('stock_movements')
+        .insert({
+          pair_id: id,
+          movement_type: 'status_change',
+          old_status: existing.status,
+          new_status: newStatus,
+          note: note ?? null,
+        })
+
+      if (movementErr) {
+        console.error('stock_movements updateStatus error:', movementErr)
+      }
 
       await fetchPairs()
     },
@@ -123,7 +183,8 @@ export function usePairs() {
       const pair = pairs.find((p) => p.id === id)
       if (!pair) throw new Error('Paire introuvable')
 
-      const { id: _id, created_at, updated_at, ...rest } = pair
+      const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...rest } = pair
+
       const newPair = {
         ...rest,
         sku: rest.sku ? `${rest.sku}-copy` : null,
