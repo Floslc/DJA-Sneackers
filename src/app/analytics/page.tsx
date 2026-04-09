@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import type { Pair } from '@/lib/types'
 import {
