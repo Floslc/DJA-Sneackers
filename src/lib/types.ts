@@ -30,7 +30,6 @@ export interface Pair {
   tracking_number: string | null
   status: PairStatus
   notes: string | null
-  photo_url: string | null
   created_at: string
   updated_at: string
 }

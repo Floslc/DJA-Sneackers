@@ -78,7 +78,6 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
     tracking_number: defaultValues?.tracking_number ?? '',
     status: defaultValues?.status ?? 'draft',
     notes: defaultValues?.notes ?? '',
-    photo_url: defaultValues?.photo_url ?? '',
   })
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [submitting, setSubmitting] = React.useState(false)
@@ -112,9 +111,16 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
       await onSubmit(result.data)
       toast({ title: 'Paire enregistrée avec succès' })
     } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'object' && err !== null && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : 'Une erreur est survenue'
+      console.error('[PairForm] submit error:', err)
       toast({
         title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Une erreur est survenue',
+        description: message,
         variant: 'destructive',
       })
     } finally {
@@ -348,15 +354,6 @@ export function PairForm({ defaultValues, onSubmit, submitLabel = 'Enregistrer',
             placeholder="Notes sur l'état, l'historique, infos acheteur..."
             value={formData.notes ?? ''}
             onChange={(e) => set('notes', e.target.value || null)}
-          />
-        </FormField>
-        <FormField label="URL Photo" error={errors.photo_url}>
-          <Input
-            className={inputClass}
-            type="url"
-            placeholder="https://..."
-            value={formData.photo_url ?? ''}
-            onChange={(e) => set('photo_url', e.target.value || null)}
           />
         </FormField>
       </div>

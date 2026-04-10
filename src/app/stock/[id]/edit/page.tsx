@@ -53,7 +53,6 @@ export default function EditPairPage() {
         customer_name: data.customer_name ?? null,
         tracking_number: data.tracking_number ?? null,
         notes: data.notes ?? null,
-        photo_url: data.photo_url ?? null,
       })
       .eq('id', id)
 

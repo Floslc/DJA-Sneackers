@@ -24,7 +24,6 @@ export default function NewPairPage() {
       customer_name: data.customer_name ?? null,
       tracking_number: data.tracking_number ?? null,
       notes: data.notes ?? null,
-      photo_url: data.photo_url ?? null,
     })
     router.push(`/stock/${pair.id}`)
   }

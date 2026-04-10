@@ -30,7 +30,6 @@ export const pairSchema = z.object({
     'returned',
   ]),
   notes: z.string().optional().nullable(),
-  photo_url: z.string().url().optional().nullable(),
 })
 
 export const pairUpdateSchema = pairSchema.partial()
