@@ -77,7 +77,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <p className="text-xs text-zinc-500 uppercase tracking-wider">Total vendu</p>
@@ -130,7 +130,35 @@ export default async function AnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-2">
+              {dormant.map((pair) => {
+                const days = pair.purchase_date
+                  ? Math.floor((Date.now() - new Date(pair.purchase_date).getTime()) / (1000 * 60 * 60 * 24))
+                  : 0
+                return (
+                  <div key={pair.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-zinc-200 font-medium">{pair.brand} {pair.model}</p>
+                      <span className="text-sm font-bold text-yellow-400 flex-shrink-0">{days}j</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-zinc-500">T. {pair.size}</span>
+                      <StatusBadge status={pair.status} />
+                      <span className="text-xs text-zinc-400 ml-auto">{formatCurrency(pair.purchase_price)}</span>
+                    </div>
+                    {pair.purchase_date && (
+                      <p className="text-xs text-zinc-600">
+                        Acheté le {format(parseISO(pair.purchase_date), 'd MMM yyyy', { locale: fr })}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block rounded-lg border border-zinc-800 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-800 bg-zinc-900/50">
@@ -144,25 +172,15 @@ export default async function AnalyticsPage() {
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
                   {dormant.map((pair) => {
-                    const days =
-                      pair.purchase_date
-                        ? Math.floor(
-                            (Date.now() - new Date(pair.purchase_date).getTime()) /
-                              (1000 * 60 * 60 * 24)
-                          )
-                        : 0
+                    const days = pair.purchase_date
+                      ? Math.floor((Date.now() - new Date(pair.purchase_date).getTime()) / (1000 * 60 * 60 * 24))
+                      : 0
                     return (
                       <tr key={pair.id} className="hover:bg-zinc-800/30">
-                        <td className="px-3 py-2 text-zinc-200">
-                          {pair.brand} {pair.model}
-                        </td>
+                        <td className="px-3 py-2 text-zinc-200">{pair.brand} {pair.model}</td>
                         <td className="px-3 py-2 text-zinc-400">{pair.size}</td>
-                        <td className="px-3 py-2">
-                          <StatusBadge status={pair.status} />
-                        </td>
-                        <td className="px-3 py-2 text-zinc-300">
-                          {formatCurrency(pair.purchase_price)}
-                        </td>
+                        <td className="px-3 py-2"><StatusBadge status={pair.status} /></td>
+                        <td className="px-3 py-2 text-zinc-300">{formatCurrency(pair.purchase_price)}</td>
                         <td className="px-3 py-2 text-yellow-400 font-medium">{days}j</td>
                         <td className="px-3 py-2 text-zinc-500 text-xs">
                           {pair.purchase_date

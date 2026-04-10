@@ -155,35 +155,37 @@ export function AnalyticsCharts({ monthlyData, brandData }: AnalyticsChartsProps
               <p className="text-sm text-zinc-500">Pas encore de ventes</p>
             </div>
           ) : (
-            <div className="flex items-center gap-8">
-              <ResponsiveContainer width={200} height={200}>
-                <PieChart>
-                  <Pie
-                    data={brandData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {brandData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #3f3f46',
-                      borderRadius: 6,
-                      color: '#e4e4e7',
-                      fontSize: 12,
-                    }}
-                    formatter={(value: number) => [value, 'paires vendues']}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+              <div className="flex-shrink-0">
+                <ResponsiveContainer width={200} height={200}>
+                  <PieChart>
+                    <Pie
+                      data={brandData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {brandData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#18181b',
+                        border: '1px solid #3f3f46',
+                        borderRadius: 6,
+                        color: '#e4e4e7',
+                        fontSize: 12,
+                      }}
+                      formatter={(value: number) => [value, 'paires vendues']}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full space-y-2">
                 {brandData.map((entry, index) => (
                   <div key={entry.name} className="flex items-center gap-3">
                     <div

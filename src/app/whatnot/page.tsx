@@ -50,12 +50,12 @@ export default function WhatnotPage() {
       </div>
 
       <Tabs defaultValue="export">
-        <TabsList>
-          <TabsTrigger value="export" className="gap-2">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="export" className="flex-1 sm:flex-none gap-2">
             <ArrowUpFromLine className="h-4 w-4" />
             Export
           </TabsTrigger>
-          <TabsTrigger value="import" className="gap-2">
+          <TabsTrigger value="import" className="flex-1 sm:flex-none gap-2">
             <ArrowDownToLine className="h-4 w-4" />
             Import
           </TabsTrigger>
@@ -97,13 +97,13 @@ export default function WhatnotPage() {
           <CardContent>
             <div className="divide-y divide-zinc-800">
               {history.map((op) => (
-                <div key={op.id} className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
+                <div key={op.id} className="flex items-start justify-between gap-3 py-3">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div
                       className={
                         op.type === 'export'
-                          ? 'flex h-7 w-7 items-center justify-center rounded-md bg-blue-950 text-blue-400'
-                          : 'flex h-7 w-7 items-center justify-center rounded-md bg-purple-950 text-purple-400'
+                          ? 'flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-md bg-blue-950 text-blue-400'
+                          : 'flex-shrink-0 flex h-7 w-7 items-center justify-center rounded-md bg-purple-950 text-purple-400'
                       }
                     >
                       {op.type === 'export' ? (
@@ -112,15 +112,15 @@ export default function WhatnotPage() {
                         <ArrowDownToLine className="h-3.5 w-3.5" />
                       )}
                     </div>
-                    <div>
-                      <p className="text-sm text-zinc-300">{op.filename}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm text-zinc-300 truncate">{op.filename}</p>
                       <p className="text-xs text-zinc-500">
                         {op.success_count} succès
                         {op.error_count > 0 && ` · ${op.error_count} erreurs`}
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs text-zinc-600">
+                  <span className="text-xs text-zinc-600 flex-shrink-0">
                     {format(new Date(op.created_at), 'd MMM yyyy HH:mm', { locale: fr })}
                   </span>
                 </div>

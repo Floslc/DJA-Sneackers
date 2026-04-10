@@ -99,14 +99,50 @@ export function ShippingTable({ pairs, onUpdate }: ShippingTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* To Ship */}
+      {/* À expédier */}
       {toShip.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-yellow-400 mb-3 flex items-center gap-2">
             <Package className="h-4 w-4" />
             À expédier ({toShip.length})
           </h3>
-          <div className="rounded-lg border border-zinc-800 overflow-hidden">
+
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {toShip.map((pair) => (
+              <div key={pair.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-zinc-200">{pair.brand} {pair.model}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    T. {pair.size}
+                    {pair.customer_name ? ` · ${pair.customer_name}` : ''}
+                    {pair.platform ? ` · ${pair.platform}` : ''}
+                    {pair.sale_date ? ` · ${format(new Date(pair.sale_date), 'd MMM yyyy', { locale: fr })}` : ''}
+                  </p>
+                </div>
+                <Input
+                  className="h-8 text-xs bg-zinc-900 border-zinc-700"
+                  placeholder="Numéro de suivi..."
+                  value={trackingInputs[pair.id] ?? pair.tracking_number ?? ''}
+                  onChange={(e) =>
+                    setTrackingInputs((prev) => ({ ...prev, [pair.id]: e.target.value }))
+                  }
+                />
+                <Button
+                  size="sm"
+                  onClick={() => markShipped(pair)}
+                  disabled={loading[pair.id]}
+                  className="w-full"
+                >
+                  <Package className="mr-1.5 h-3.5 w-3.5" />
+                  Expédier
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block rounded-lg border border-zinc-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/50">
@@ -161,14 +197,53 @@ export function ShippingTable({ pairs, onUpdate }: ShippingTableProps) {
         </div>
       )}
 
-      {/* Shipped */}
+      {/* Expédiées */}
       {shipped.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-sky-400 mb-3 flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             Expédiées ({shipped.length})
           </h3>
-          <div className="rounded-lg border border-zinc-800 overflow-hidden">
+
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {shipped.map((pair) => (
+              <div key={pair.id} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-200">{pair.brand} {pair.model}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      T. {pair.size}
+                      {pair.customer_name ? ` · ${pair.customer_name}` : ''}
+                      {pair.platform ? ` · ${pair.platform}` : ''}
+                    </p>
+                  </div>
+                  <StatusBadge status={pair.status} />
+                </div>
+                {pair.tracking_number && (
+                  <p className="font-mono text-xs text-zinc-500">{pair.tracking_number}</p>
+                )}
+                {pair.shipping_date && (
+                  <p className="text-xs text-zinc-600">
+                    Expédié le {format(new Date(pair.shipping_date), 'd MMM yyyy', { locale: fr })}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => markCompleted(pair)}
+                  disabled={loading[pair.id]}
+                  className="w-full"
+                >
+                  <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                  Terminer
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block rounded-lg border border-zinc-800 overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/50">
